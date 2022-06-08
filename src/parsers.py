@@ -10,7 +10,7 @@ from .models import CarInfo
 
 
 class ParserAutoRia:
-    BASE_URL = 'https://auto.ria.com/uk/car/used/'
+    BASE_URL = 'https://auto.ria.com/uk/car/used'
 
     def _get_response(self, url: str) -> Response:
         resposne = requests.get(url)
@@ -26,14 +26,14 @@ class ParserAutoRia:
         last_page = int(
             selector.xpath('//a[@class="page-link"]/text()')[-1]
                 .get().replace(' ', '')
-        )
+        ) * 2
+        print(f'lastpage - {last_page}')
         return last_page
 
     def get_next_url(self) -> str:
         last_page = self.get_last_page_number()
         page = 1
-        # yield self.BASE_URL
-        while page <= last_page * 2:
+        while page <= last_page:
             yield self.BASE_URL + f'?page={page}'
             page += 1
 
@@ -45,6 +45,10 @@ class ParserAutoRia:
         price = int(price[:-1].replace(' ', ''))
 
         owner_name = selector.xpath('//h4[@class="seller_info_name bold"]/text()').get()
+        phone_number = selector.xpath(
+            '//span[@class="phone bold"]/@data-phone-number').get()
+        if phone_number:
+            phone_number = '+380 ' + phone_number
 
         img_count = selector.xpath('//a[@class="show-all link-dotted"]/text()').get()
         if img_count:
@@ -62,8 +66,7 @@ class ParserAutoRia:
                     .get().strip()
             ),
             owner_name=owner_name.strip() if owner_name else None,
-            phone_number='+380' + selector.xpath(
-                '//span[@title="Перевірений  телефон"]/@data-phone-number').get(),
+            phone_number=phone_number,
             img_url=selector.xpath('//div[@class="photo-620x465"]//img/@src').extract_first(),
             img_count=img_count,
             car_number=car_number.strip() if car_number else None,
@@ -79,6 +82,7 @@ class ParserAutoRia:
         selector = Selector(response.text)
         links = selector.xpath('//a[@class="address"]')
         print(len(links))
+        print(url, end='\n\n')
         return [i.attrib.get('href', '') for i in links]
 
     def start_parse(self, limit: int = 0):
