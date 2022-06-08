@@ -2,8 +2,10 @@ import os
 from typing import Iterable
 
 import psycopg2
+from psycopg2.errorcodes import UNIQUE_VIOLATION
 
-from models import CarInfo
+from .exceptions import UniqueConstraintException
+from .models import CarInfo
 
 
 def connect_to_db():
@@ -40,13 +42,23 @@ class Database:
                 f'url, title, price, mileage, owner_name, phone_number,' \
                 f'img_url, img_count, car_number, vin_code) VALUES '
 
+        unique_error_count = 0
+
         for car in data:
-            query += car.format_to_query() + ','
+            try:
+                cls.cursor.execute(query + car.format_to_query())
+                cls.connection.commit()
+            except psycopg2.Error as e:
+                if e.pgcode == UNIQUE_VIOLATION:
+                    unique_error_count += 1
+                    cls.connection.rollback()
+                    continue
+                raise e
 
         query = query[:-1]
 
-        cls.cursor.execute(query)
-        cls.connection.commit()
+        if unique_error_count == len(data):
+            raise UniqueConstraintException
 
     @classmethod
     def close_connection(cls):

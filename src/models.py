@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from datetime import datetime
 
 
 @dataclass
@@ -19,7 +18,8 @@ class CarInfo:
         result = f"('{self.url}', '{self.title}', {self.price}," \
                  f"{self.mileage}, "
         result += f"'{self.owner_name}', " if self.owner_name else "null, "
-        result += f"'{self.phone_number}', '{self.img_url}', {self.img_count}, "
+        result += f"'{self.phone_number}', '{self.img_url}', "
+        result += f"'{self.img_count}', " if self.img_count else "null, "
         result += f"'{self.car_number}', " if self.car_number else "null, "
         result += f"'{self.vin_code}')" if self.vin_code else "null)"
 

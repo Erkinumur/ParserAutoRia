@@ -4,9 +4,9 @@ import requests
 from parsel import Selector
 from requests import Response
 
-from db import Database
-from exceptions import BadRequestException
-from models import CarInfo
+from .db import Database
+from .exceptions import BadRequestException, UniqueConstraintException
+from .models import CarInfo
 
 
 class ParserAutoRia:
@@ -31,9 +31,9 @@ class ParserAutoRia:
 
     def get_next_url(self) -> str:
         last_page = self.get_last_page_number()
-        page = 2
-        yield self.BASE_URL
-        while page <= last_page:
+        page = 1
+        # yield self.BASE_URL
+        while page <= last_page * 2:
             yield self.BASE_URL + f'?page={page}'
             page += 1
 
@@ -92,7 +92,11 @@ class ParserAutoRia:
                 for link in links
             ]
 
-            self.write_data_to_db(cars)
+            try:
+                self.write_data_to_db(cars)
+            except UniqueConstraintException:
+                print('unique constraint')
+                break
 
             if limit:
                 if count >= limit:
