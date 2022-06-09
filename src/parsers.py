@@ -37,9 +37,12 @@ class ParserAutoRia:
             yield self.BASE_URL + f'?page={page}'
             page += 1
 
-    def parse_car_info(self, url: str) -> CarInfo:
+    def parse_car_info(self, url: str) -> CarInfo | None:
         response = self._get_response(url)
         selector = Selector(response.text)
+
+        if selector.xpath('//div[contains(@class, "sold-out")]'):
+            return
 
         price = selector.xpath('//div[@class="price_value"]/strong/text()').extract_first()
         price = int(price[:-1].replace(' ', ''))
@@ -97,7 +100,7 @@ class ParserAutoRia:
             ]
 
             try:
-                self.write_data_to_db(cars)
+                self.write_data_to_db([car for car in cars if car])
             except UniqueConstraintException:
                 print('unique constraint')
                 break
