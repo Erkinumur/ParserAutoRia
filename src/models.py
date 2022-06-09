@@ -19,6 +19,8 @@ class CarInfo:
 
         for field, value in self.__dict__.items():
             if isinstance(value, str):
+                if "'" in value:
+                    value = value.replace("'", "\"")
                 result += f"'{value}', "
             elif value is None:
                 result += 'null, '

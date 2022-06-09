@@ -30,9 +30,9 @@ class ParserAutoRia:
         print(f'lastpage - {last_page}')
         return last_page
 
-    def get_next_url(self) -> str:
+    def get_next_url(self, start_page: int = 1) -> str:
         last_page = self.get_last_page_number()
-        page = 1
+        page = start_page
         while page <= last_page:
             yield self.BASE_URL + f'?page={page}'
             page += 1
@@ -44,10 +44,22 @@ class ParserAutoRia:
         if selector.xpath('//div[contains(@class, "sold-out")]'):
             return
 
-        price = selector.xpath('//div[@class="price_value"]/strong/text()').extract_first()
-        price = int(price[:-1].replace(' ', ''))
+        price = selector.xpath('//span[@data-currency="USD"]/text()').get()
+        if not price:
+            price = selector.xpath('//div[@class="price_value"]/strong/text()').get()
+        if price:
+            price = int(price.replace(' ', '').replace('$', ''))
+
+        mileage = selector.xpath('//div[@class="base-information bold"]/span/text()').get()
+        if mileage:
+            mileage = int(mileage.strip())
 
         owner_name = selector.xpath('//h4[@class="seller_info_name bold"]/text()').get()
+        if not owner_name:
+            owner_name = selector.xpath('//h4[@class="seller_info_name"]/a/text()').get()
+        if not owner_name:
+            owner_name = selector.xpath('//h4[@class="seller_info_name"]/a/strong/text()')
+
         phone_number = selector.xpath(
             '//span[@class="phone bold"]/@data-phone-number').get()
         if phone_number:
@@ -64,10 +76,7 @@ class ParserAutoRia:
             url=url,
             title=selector.xpath('//h1/text()').extract_first().strip(),
             price=price,
-            mileage=int(
-                selector.xpath('//div[@class="base-information bold"]/span/text()')
-                    .get().strip()
-            ),
+            mileage=mileage,
             owner_name=owner_name.strip() if owner_name else None,
             phone_number=phone_number,
             img_url=selector.xpath('//div[@class="photo-620x465"]//img/@src').extract_first(),
@@ -88,11 +97,11 @@ class ParserAutoRia:
         print(url, end='\n\n')
         return [i.attrib.get('href', '') for i in links]
 
-    def start_parse(self, limit: int = 0):
+    def start_parse(self, limit: int = 0, start_page: int =1):
         if limit:
             count = 1
 
-        for url in self.get_next_url():
+        for url in self.get_next_url(start_page):
             links = self.parse_links_from_catalog_page(url)
             cars = [
                 self.parse_car_info(link)
