@@ -10,7 +10,9 @@ from .models import CarInfo
 
 
 class ParserAutoRia:
-    BASE_URL = 'https://auto.ria.com/uk/car/used'
+    def __init__(self):
+        self.BASE_URL = 'https://auto.ria.com/uk/car/used'
+        self.db = Database()
 
     def _get_response(self, url: str) -> Response:
         resposne = requests.get(url)
@@ -120,4 +122,4 @@ class ParserAutoRia:
                 count += 1
 
     def write_data_to_db(self, data: Iterable[CarInfo]):
-        Database.insert_car_info_data(data)
+        self.db.insert_car_info_data(data)
